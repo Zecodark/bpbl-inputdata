@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pemeriksaan BPBL
 
-## Getting Started
+Aplikasi CRUD pemeriksaan BPBL berbasis **Next.js 16 (App Router)** dengan
+**Google Spreadsheet** sebagai basis data dan **Google Drive** sebagai
+penyimpanan foto pemeriksaan.
 
-First, run the development server:
+Mengikuti rancangan di [`rancangan_aplikasi_crud_bpbl_spreadsheet_drive.md`](./rancangan_aplikasi_crud_bpbl_spreadsheet_drive.md).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Fitur
+
+- Daftar data pemeriksaan dari tab `DATA INPUT` (pencarian + filter status).
+- Tambah pemeriksaan baru, NO dan timestamp dibuat otomatis.
+- Edit data, soft delete, dan halaman validasi terpisah.
+- Upload foto langsung dari form ke Google Drive; spreadsheet menyimpan `fileId`.
+- Schema kolom (81 kolom utama + 11 kolom audit) didefinisikan satu kali di
+  [`lib/columns.ts`](./lib/columns.ts) dan dipakai oleh form, API, dan tampilan.
+- Inisialisasi otomatis: bila tab `DATA INPUT` belum ada di spreadsheet, aplikasi
+  akan membuat tab dan menulis baris header sesuai schema.
+
+## Persiapan
+
+1. **Buat service account** di Google Cloud Console, aktifkan **Google Sheets API**
+   dan **Google Drive API**, lalu unduh kunci JSON-nya.
+2. **Bagikan akses** spreadsheet target dan folder Drive ke email service
+   account dengan peran **Editor**.
+3. Salin file environment:
+
+   ```bash
+   copy .env.example .env.local
+   ```
+
+   Lalu isi nilainya:
+
+   ```env
+   GOOGLE_CLIENT_EMAIL=service-account@project-id.iam.gserviceaccount.com
+   GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+   GOOGLE_SHEET_ID=spreadsheet_id_dari_url
+   GOOGLE_DRIVE_FOLDER_ID=folder_id_drive_root
+   GOOGLE_SHEET_TAB=DATA INPUT
+   ```
+
+   `GOOGLE_PRIVATE_KEY` boleh memakai literal `\n` (akan dikonversi otomatis).
+
+4. Pasang dependencies dan jalankan dev server:
+
+   ```bash
+   npm install
+   npm run dev
+   ```
+
+5. Buka <http://localhost:3000>. Saat halaman daftar dibuka pertama kali, tab
+   `DATA INPUT` akan dibuat di spreadsheet bila belum ada.
+
+## Struktur penting
+
+```
+app/
+  page.tsx                             dashboard
+  data-input/
+    page.tsx                           daftar + filter
+    create/page.tsx                    form tambah
+    [no]/page.tsx                      detail
+    [no]/edit/page.tsx                 form edit
+    [no]/validasi/page.tsx             form validasi
+  api/
+    data-input/route.ts                GET list, POST create
+    data-input/[no]/route.ts           GET detail, PATCH, DELETE soft
+    upload/route.ts                    POST upload foto ke Drive
+components/
+  PemeriksaanForm.tsx                  form dinamis dari schema kolom
+  StatusTag.tsx                        badge status validasi
+lib/
+  columns.ts                           single source of truth schema kolom
+  google.ts                            klien Sheets/Drive (service account)
+  sheet.ts                             read/append/patch baris spreadsheet
+  drive.ts                             upload foto + util preview URL
+  id.ts                                generator NO dan timestamp
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Catatan implementasi
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Foto diupload terlebih dahulu sebelum record dibuat, sehingga record baru
+  awalnya menggunakan folder Drive sementara `TMP-...`. Anda dapat memindahkan
+  file secara manual atau menambah langkah _move_ pasca-create.
+- Soft delete menyimpan `IS_DELETED=TRUE` beserta `DELETED_BY` dan
+  `DELETED_AT`. Filter daftar menyembunyikan baris terhapus secara default.
+- API `GET /api/data-input?includeDeleted=1` mengembalikan semua data termasuk
+  yang ditandai dihapus.
+- `tsconfig.json` sudah memetakan `@/*` ke root project sehingga import seperti
+  `@/lib/columns` dan `@/components/PemeriksaanForm` bekerja tanpa konfigurasi
+  tambahan.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Skrip
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run dev      # next dev (Turbopack di Next.js 16)
+npm run build    # next build
+npm run start    # next start
+npm run lint     # eslint
+```

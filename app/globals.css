@@ -1,26 +1,318 @@
 @import "tailwindcss";
 
+/* PLN-inspired palette: navy blue primary + yellow accent. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f4f7fb;
+  --foreground: #0f1f3a;
+  --card: #ffffff;
+  --card-muted: #f7f9fc;
+  --border: #d9e2ec;
+  --border-strong: #b9c7d6;
+  --muted: #5b6b80;
+
+  --primary: #0058a7;
+  --primary-hover: #004282;
+  --primary-strong: #00306b;
+  --primary-soft: #e3eef9;
+  --primary-fg: #ffffff;
+
+  --accent: #ffc72c;
+  --accent-hover: #e6a800;
+  --accent-fg: #0f1f3a;
+
+  --success: #1f7a3a;
+  --success-soft: #e3f4e8;
+  --warning: #c46a00;
+  --warning-soft: #fff2dc;
+  --danger: #c0392b;
+  --danger-soft: #fbe4e1;
+  --info: #0058a7;
+  --info-soft: #e3eef9;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0a1628;
+    --foreground: #e6edf7;
+    --card: #112742;
+    --card-muted: #0d2038;
+    --border: #1e3a5f;
+    --border-strong: #2a4d77;
+    --muted: #8a9bb5;
+
+    --primary: #2d8ce0;
+    --primary-hover: #4ea4ee;
+    --primary-strong: #6cb8f3;
+    --primary-soft: #14304f;
+    --primary-fg: #ffffff;
+
+    --accent: #ffc72c;
+    --accent-hover: #ffd45a;
+    --accent-fg: #0a1628;
+
+    --success: #4caf6a;
+    --success-soft: #14302a;
+    --warning: #e09b3e;
+    --warning-soft: #2e2417;
+    --danger: #ef6e63;
+    --danger-soft: #2c1916;
+    --info: #2d8ce0;
+    --info-soft: #14304f;
   }
 }
 
+html,
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Reusable primitives ---------- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.875rem;
+  box-shadow: 0 1px 2px rgba(15, 31, 58, 0.04);
+}
+
+.card-flat {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+label {
+  color: var(--foreground);
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.8rem;
+  color: var(--foreground);
+  font-size: 0.92rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: color-mix(in srgb, var(--muted) 90%, transparent);
+}
+
+.input:hover,
+.select:hover,
+.textarea:hover {
+  border-color: var(--border-strong);
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s,
+    box-shadow 0.15s, transform 0.05s;
+  white-space: nowrap;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-fg);
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-accent {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.btn-accent:hover {
+  background: var(--accent-hover);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+.btn-ghost:hover {
+  border-color: var(--border-strong);
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
+}
+
+.btn-outline {
+  background: transparent;
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-outline:hover {
+  background: var(--primary-soft);
+}
+
+.btn-danger {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.btn-danger:hover {
+  background: var(--danger-soft);
+}
+
+.btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-sm {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.78rem;
+  border-radius: 0.4rem;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--card-muted);
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.tag-primary {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+  background: var(--primary-soft);
+}
+.tag-warning {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+  background: var(--warning-soft);
+}
+.tag-success {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 40%, transparent);
+  background: var(--success-soft);
+}
+.tag-danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  background: var(--danger-soft);
+}
+.tag-muted {
+  color: var(--muted);
+}
+
+/* PLN logo mark — yellow rounded square with a lightning bolt. */
+.pln-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--primary-strong);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  font-size: 0.78rem;
+  box-shadow: 0 2px 0 0 color-mix(in srgb, var(--accent-hover) 60%, transparent);
+}
+
+.brand-bar {
+  background: linear-gradient(120deg, var(--primary-strong), var(--primary));
+  color: #ffffff;
+}
+
+.brand-bar a,
+.brand-bar a:visited {
+  color: #ffffff;
+}
+
+/* Wizard step pill */
+.step-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--card-muted);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.step-dot.is-active {
+  background: var(--primary);
+  color: var(--primary-fg);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-soft);
+}
+
+.step-dot.is-done {
+  background: var(--success);
+  color: #ffffff;
+  border-color: var(--success);
+}
+
+/* Subtle separators inside detail cards */
+.kv-row + .kv-row {
+  border-top: 1px dashed var(--border);
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
 }
