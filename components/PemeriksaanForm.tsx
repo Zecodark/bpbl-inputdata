@@ -439,9 +439,12 @@ function PhotoField(props: {
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Two hidden inputs: one opens the camera (capture=environment), the other
+  // opens the file picker (no capture attribute → Android shows the gallery).
+  const cameraInputId = `${id}-camera`;
+  const galleryInputId = `${id}-gallery`;
+
+  async function uploadFile(file: File) {
     setUploading(true);
     setErr(null);
     setCopied(false);
@@ -458,15 +461,18 @@ function PhotoField(props: {
       const j = (await resp.json()) as {
         data: { fileId: string; webViewLink: string; thumbnail: string };
       };
-      // Save the share URL so it's both human-readable in the spreadsheet and
-      // ready to be opened directly from the cell.
       onChange(j.data.webViewLink);
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setUploading(false);
-      e.target.value = "";
     }
+  }
+
+  function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) void uploadFile(file);
+    e.target.value = "";
   }
 
   // Build a preview URL and a share URL from whatever is currently stored
@@ -499,7 +505,7 @@ function PhotoField(props: {
 
   return (
     <div className="md:col-span-2">
-      <label htmlFor={id} className="mb-1 block text-sm font-medium">
+      <label htmlFor={cameraInputId} className="mb-1 block text-sm font-medium">
         {column.label}
       </label>
       <div className="flex flex-wrap items-start gap-3 rounded-lg border border-dashed border-[var(--border-strong)] bg-[var(--card-muted)] p-3">
@@ -518,15 +524,38 @@ function PhotoField(props: {
           </div>
         )}
         <div className="flex flex-1 flex-col gap-2 min-w-[220px]">
-          <input
-            id={id}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            disabled={uploading}
-            onChange={onPick}
-            className="text-sm"
-          />
+          <div className="flex flex-wrap gap-2">
+            {/* Hidden inputs — triggered by the visible buttons below. */}
+            <input
+              id={cameraInputId}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              disabled={uploading}
+              onChange={onPick}
+              className="hidden"
+            />
+            <input
+              id={galleryInputId}
+              type="file"
+              accept="image/*"
+              disabled={uploading}
+              onChange={onPick}
+              className="hidden"
+            />
+            <label
+              htmlFor={cameraInputId}
+              className={`btn btn-outline btn-sm ${uploading ? "pointer-events-none opacity-60" : ""}`}
+            >
+              📷 Kamera
+            </label>
+            <label
+              htmlFor={galleryInputId}
+              className={`btn btn-ghost btn-sm ${uploading ? "pointer-events-none opacity-60" : ""}`}
+            >
+              🖼️ Galeri / File
+            </label>
+          </div>
           <input
             type="text"
             placeholder="…atau tempel URL / fileId Drive"
