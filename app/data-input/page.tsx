@@ -82,23 +82,44 @@ export default async function DataInputListPage({
       </section>
 
       <form
-        className="card flex flex-wrap items-center gap-2 p-3"
+        className="card grid gap-2 p-3 sm:grid-cols-[1fr_auto_auto] sm:items-center"
         method="get"
         action="/data-input"
       >
-        <div className="flex flex-1 min-w-[220px] items-center gap-2">
-          <span aria-hidden className="text-[var(--muted)]">
-            🔍
+        <div className="relative">
+          <span
+            className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[var(--muted)]"
+            aria-hidden
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
           </span>
           <input
             name="q"
             defaultValue={sp.q ?? ""}
             placeholder="Cari NO, nama, IDPEL, mitra, unit…"
-            className="input border-0 bg-transparent shadow-none focus:ring-0 focus:border-transparent focus:shadow-none"
-            style={{ outline: "none" }}
+            className="input"
+            style={{ paddingLeft: "2.25rem" }}
           />
         </div>
-        <select name="status" defaultValue={status} className="select w-52">
+        <select
+          name="status"
+          defaultValue={status}
+          className="select sm:w-56"
+          aria-label="Filter status validasi"
+        >
           <option value="">Semua status</option>
           {STATUS_FILTERS.map((s) => (
             <option key={s} value={s}>
@@ -106,23 +127,25 @@ export default async function DataInputListPage({
             </option>
           ))}
         </select>
-        <label className="flex items-center gap-2 text-sm text-[var(--muted)] px-2">
+        <div className="flex items-center gap-2">
+          <button className="btn btn-primary" type="submit">
+            Filter
+          </button>
+          {(q || status || includeDeleted) && (
+            <Link className="btn btn-ghost" href="/data-input">
+              Reset
+            </Link>
+          )}
+        </div>
+        <label className="flex items-center gap-2 text-sm text-[var(--muted)] sm:col-span-3">
           <input
             type="checkbox"
             name="deleted"
             value="1"
             defaultChecked={includeDeleted}
           />
-          tampilkan terhapus
+          Tampilkan data yang sudah dihapus
         </label>
-        <button className="btn btn-outline" type="submit">
-          Filter
-        </button>
-        {(q || status || includeDeleted) && (
-          <Link className="btn btn-ghost" href="/data-input">
-            Reset
-          </Link>
-        )}
       </form>
 
       <section className="card overflow-hidden">
