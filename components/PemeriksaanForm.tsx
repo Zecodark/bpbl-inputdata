@@ -437,12 +437,14 @@ function PhotoField(props: {
   const { id, column, value, uploadNo, onChange } = props;
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
     setErr(null);
+    setCopied(false);
     try {
       const fd = new FormData();
       fd.set("file", file);
@@ -456,7 +458,9 @@ function PhotoField(props: {
       const j = (await resp.json()) as {
         data: { fileId: string; webViewLink: string; thumbnail: string };
       };
-      onChange(j.data.fileId);
+      // Save the share URL so it's both human-readable in the spreadsheet and
+      // ready to be opened directly from the cell.
+      onChange(j.data.webViewLink);
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
@@ -465,11 +469,33 @@ function PhotoField(props: {
     }
   }
 
-  const preview = value
-    ? value.startsWith("http")
+  // Build a preview URL and a share URL from whatever is currently stored
+  // (full URL, fileId, or empty).
+  const fileIdMatch = value.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+  const fileId =
+    fileIdMatch?.[1] ??
+    (/^[a-zA-Z0-9_-]{10,}$/.test(value.trim()) ? value.trim() : null);
+  const preview = fileId
+    ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`
+    : value && /^https?:\/\//.test(value)
       ? value
-      : `https://drive.google.com/thumbnail?id=${value}&sz=w400`
-    : null;
+      : null;
+  const shareUrl = fileId
+    ? `https://drive.google.com/file/d/${fileId}/view`
+    : value && /^https?:\/\//.test(value)
+      ? value
+      : null;
+
+  async function copyUrl() {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // ignore; user can still copy from the input.
+    }
+  }
 
   return (
     <div className="md:col-span-2">
@@ -503,17 +529,41 @@ function PhotoField(props: {
           />
           <input
             type="text"
-            placeholder="…atau tempel fileId / URL Drive"
+            placeholder="…atau tempel URL / fileId Drive"
             className="input"
             value={value}
             onChange={(e) => onChange(e.target.value)}
           />
+          {shareUrl && (
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <a
+                href={shareUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="truncate text-[var(--primary)] hover:underline"
+                style={{ maxWidth: "280px" }}
+              >
+                {shareUrl}
+              </a>
+              <button
+                type="button"
+                onClick={copyUrl}
+                className="btn btn-ghost btn-sm"
+              >
+                {copied ? "Tersalin ✓" : "Salin"}
+              </button>
+            </div>
+          )}
           {uploading && (
             <span className="text-xs text-[var(--primary)]">
               Mengunggah ke Drive…
             </span>
           )}
-          {err && <span className="text-xs text-[var(--danger)]">{err}</span>}
+          {err && (
+            <span className="text-xs text-[var(--danger)] whitespace-pre-wrap">
+              {err}
+            </span>
+          )}
         </div>
       </div>
     </div>

@@ -31,7 +31,7 @@ export default function RootLayout({
         <header className="brand-bar">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
             <Link href="/" className="flex items-center gap-3">
-              <span className="pln-mark">PLN</span>
+              <span className="pln-mark">BPBL</span>
               <span className="flex flex-col leading-tight">
                 <span className="text-sm font-semibold">Pemeriksaan BPBL</span>
                 <span className="text-xs opacity-80">

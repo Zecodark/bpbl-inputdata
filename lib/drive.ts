@@ -2,6 +2,17 @@ import "server-only";
 import { Readable } from "node:stream";
 import { getDrive, getDriveFolderId } from "./google";
 
+/**
+ * Common request opts so every Drive call understands Shared Drives. Without
+ * `supportsAllDrives` + `includeItemsFromAllDrives`, list/create/permissions
+ * silently fail when the parent folder lives in a Shared Drive — which is the
+ * default for many PLN workspaces.
+ */
+const ALL_DRIVES = {
+  supportsAllDrives: true,
+  includeItemsFromAllDrives: true,
+} as const;
+
 /** Find or create a sub-folder named for the given record NO. */
 async function ensureRecordFolder(no: string): Promise<string> {
   const drive = getDrive();
@@ -13,6 +24,8 @@ async function ensureRecordFolder(no: string): Promise<string> {
     fields: "files(id, name)",
     spaces: "drive",
     pageSize: 1,
+    corpora: "allDrives",
+    ...ALL_DRIVES,
   });
   const found = list.data.files?.[0];
   if (found?.id) return found.id;
@@ -24,6 +37,7 @@ async function ensureRecordFolder(no: string): Promise<string> {
       parents: [parent],
     },
     fields: "id",
+    ...ALL_DRIVES,
   });
   if (!created.data.id) throw new Error("Gagal membuat folder Drive");
   return created.data.id;
@@ -31,8 +45,9 @@ async function ensureRecordFolder(no: string): Promise<string> {
 
 export type UploadResult = {
   fileId: string;
+  /** Drive share URL (https://drive.google.com/file/d/<id>/view). */
   webViewLink: string;
-  /** A direct image URL useful for `<img src>` previews. */
+  /** Inline image URL useful for `<img src>` previews. */
   thumbnail: string;
 };
 
@@ -68,6 +83,7 @@ export async function uploadPhoto(opts: {
       body: Readable.from(opts.buffer),
     },
     fields: "id, webViewLink",
+    ...ALL_DRIVES,
   });
   const fileId = created.data.id;
   if (!fileId) throw new Error("Drive tidak mengembalikan fileId");
@@ -77,15 +93,17 @@ export async function uploadPhoto(opts: {
     await drive.permissions.create({
       fileId,
       requestBody: { role: "reader", type: "anyone" },
+      ...ALL_DRIVES,
     });
   } catch {
-    // ignore permission errors (some workspaces forbid `anyone` sharing)
+    // ignore — some workspaces forbid `anyone` sharing.
   }
 
   return {
     fileId,
     webViewLink:
-      created.data.webViewLink ?? `https://drive.google.com/file/d/${fileId}/view`,
+      created.data.webViewLink ??
+      `https://drive.google.com/file/d/${fileId}/view`,
     thumbnail: `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`,
   };
 }
@@ -119,14 +137,25 @@ export function photoPreviewUrl(value: string | undefined): string | null {
   if (!value) return null;
   const trimmed = value.trim();
   if (!trimmed) return null;
-  // Already a Drive share URL: extract the fileId.
   const match = trimmed.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
   if (match) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
-  // Looks like a bare fileId.
   if (/^[a-zA-Z0-9_-]{10,}$/.test(trimmed)) {
     return `https://drive.google.com/thumbnail?id=${trimmed}&sz=w800`;
   }
-  // Anything else (http URL, gs://, etc.) — return as-is.
+  if (/^https?:\/\//.test(trimmed)) return trimmed;
+  return null;
+}
+
+/** Build a Drive share URL from any stored value (fileId, URL, or empty). */
+export function photoShareUrl(value: string | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const match = trimmed.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+  if (match) return `https://drive.google.com/file/d/${match[1]}/view`;
+  if (/^[a-zA-Z0-9_-]{10,}$/.test(trimmed)) {
+    return `https://drive.google.com/file/d/${trimmed}/view`;
+  }
   if (/^https?:\/\//.test(trimmed)) return trimmed;
   return null;
 }

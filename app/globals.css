@@ -255,13 +255,14 @@ label {
   color: var(--muted);
 }
 
-/* PLN logo mark — yellow rounded square with a lightning bolt. */
+/* BPBL logo mark — yellow rounded square. */
 .pln-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
+  min-width: 44px;
   height: 36px;
+  padding: 0 0.45rem;
   border-radius: 8px;
   background: var(--accent);
   color: var(--primary-strong);
